@@ -5,26 +5,27 @@ use eframe::{egui, epi};
 #[cfg_attr(feature = "persistence", serde(default))] // if we add new fields, give them default values when deserializing old state
 pub struct TemplateApp {
     // Example stuff:
-    label: String,
-
+    // label: String,
+    selected: Enum,
     // this how you opt-out of serialization of a member
-    #[cfg_attr(feature = "persistence", serde(skip))]
-    value: f32,
+    // #[cfg_attr(feature = "persistence", serde(skip))]
+    // value: f32,
 }
 
 impl Default for TemplateApp {
     fn default() -> Self {
         Self {
             // Example stuff:
-            label: "Hello World!".to_owned(),
-            value: 2.7,
+            // label: "Hello World!".to_owned(),
+            selected: Enum::First,
+            // value: 2.7,
         }
     }
 }
 
 impl epi::App for TemplateApp {
     fn name(&self) -> &str {
-        "eframe template"
+        "epochs egui"
     }
 
     /// Called once before the first frame.
@@ -52,7 +53,11 @@ impl epi::App for TemplateApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::CtxRef, frame: &mut epi::Frame<'_>) {
-        let Self { label, value } = self;
+        let Self {
+            // label,
+            selected,
+            // value,
+        } = self;
 
         // Examples of how to create different panels and windows.
         // Pick whichever suits you.
@@ -70,40 +75,48 @@ impl epi::App for TemplateApp {
             });
         });
 
-        egui::SidePanel::left("side_panel").show(ctx, |ui| {
-            ui.heading("Side Panel");
+        // egui::SidePanel::left("side_panel").show(ctx, |ui| {
+        //     ui.heading("Side Panel");
 
-            ui.horizontal(|ui| {
-                ui.label("Write something: ");
-                ui.text_edit_singleline(label);
-            });
+        //     ui.horizontal(|ui| {
+        //         ui.label("Write something: ");
+        //         ui.text_edit_singleline(label);
+        //     });
 
-            ui.add(egui::Slider::new(value, 0.0..=10.0).text("value"));
-            if ui.button("Increment").clicked() {
-                *value += 1.0;
-            }
+        //     ui.add(egui::Slider::new(value, 0.0..=10.0).text("value"));
+        //     if ui.button("Increment").clicked() {
+        //         *value += 1.0;
+        //     }
 
-            ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
-                ui.horizontal(|ui| {
-                    ui.spacing_mut().item_spacing.x = 0.0;
-                    ui.label("powered by ");
-                    ui.hyperlink_to("egui", "https://github.com/emilk/egui");
-                    ui.label(" and ");
-                    ui.hyperlink_to("eframe", "https://github.com/emilk/egui/tree/master/eframe");
-                });
-            });
-        });
+        //     ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
+        //         ui.horizontal(|ui| {
+        //             ui.spacing_mut().item_spacing.x = 0.0;
+        //             ui.label("powered by ");
+        //             ui.hyperlink_to("egui", "https://github.com/emilk/egui");
+        //             ui.label(" and ");
+        //             ui.hyperlink_to("eframe", "https://github.com/emilk/egui/tree/master/eframe");
+        //         });
+        //     });
+        // });
 
         egui::CentralPanel::default().show(ctx, |ui| {
             // The central panel the region left after adding TopPanel's and SidePanel's
 
-            ui.heading("eframe template");
-            ui.hyperlink("https://github.com/emilk/eframe_template");
+            ui.heading("epochs egui");
+            ui.hyperlink("https://github.com/oylenshpeegul/epochs-egui");
             ui.add(egui::github_link_file!(
                 "https://github.com/emilk/eframe_template/blob/master/",
                 "Source code."
             ));
             egui::warn_if_debug_build(ui);
+
+            egui::ComboBox::from_label("Select one!")
+                .selected_text(format!("{:?}", selected))
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(selected, Enum::First, "First");
+                    ui.selectable_value(selected, Enum::Second, "Second");
+                    ui.selectable_value(selected, Enum::Third, "Third");
+                });
         });
 
         if false {
@@ -115,4 +128,12 @@ impl epi::App for TemplateApp {
             });
         }
     }
+}
+
+#[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+enum Enum {
+    First,
+    Second,
+    Third,
 }
