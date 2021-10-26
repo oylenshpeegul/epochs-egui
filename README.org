@@ -2,5 +2,5 @@
 
 An [[https://github.com/emilk/egui][egui]] interface to the [[https://github.com/oylenshpeegul/Epochs-rust][epochs]] crate.
 
-
-
+#+CAPTION: Screen shot with 1234567890000000 filled in and Mozilla selected.
+[[file:epochs_egui.png]]
