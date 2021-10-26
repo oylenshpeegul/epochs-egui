@@ -10,8 +10,9 @@ edition = "2021"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-eframe = "0.15.0" # Gives us egui, epi and web+native backends
-
+chrono = "0.4"
+eframe = "0.15" # Gives us egui, epi and web+native backends
+epochs = "0.2"
 serde = { version = "1", features = ["derive"], optional = true }
 
 [features]

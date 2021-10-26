@@ -1,12 +1,41 @@
+// use chrono::{NaiveDate, NaiveDateTime};
+use chrono::NaiveDate;
 use eframe::{egui, epi};
+use epochs;
+use std::fmt;
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
+enum Epoch {
+    Apfs,
+    Java,
+    Mozilla,
+    Unix,
+}
+
+// Since Epoch is a simple C-like enum, we can iterate over its associated constant.
+impl Epoch {
+    const VALUES: [Self; 4] = [Self::Apfs, Self::Java, Self::Mozilla, Self::Unix];
+}
+
+impl fmt::Display for Epoch {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match *self {
+            Epoch::Apfs => write!(f, "{:30}", "APFS (nanoseconds)"),
+            Epoch::Java => write!(f, "{:30}", "Java (milliseconds)"),
+            Epoch::Mozilla => write!(f, "{:30}", "Mozilla (microseconds)"),
+            Epoch::Unix => write!(f, "{:30}", "Unix (seconds)"),
+        }
+    }
+}
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[cfg_attr(feature = "persistence", derive(serde::Deserialize, serde::Serialize))]
 #[cfg_attr(feature = "persistence", serde(default))] // if we add new fields, give them default values when deserializing old state
 pub struct TemplateApp {
-    // Example stuff:
-    // label: String,
-    selected: Enum,
+    datetime: String,
+    number: i64,
+    selected: Epoch,
     // this how you opt-out of serialization of a member
     // #[cfg_attr(feature = "persistence", serde(skip))]
     // value: f32,
@@ -15,10 +44,9 @@ pub struct TemplateApp {
 impl Default for TemplateApp {
     fn default() -> Self {
         Self {
-            // Example stuff:
-            // label: "Hello World!".to_owned(),
-            selected: Enum::First,
-            // value: 2.7,
+            datetime: "1970-01-01 00:00:00".to_string(),
+            number: 0,
+            selected: Epoch::Unix,
         }
     }
 }
@@ -54,10 +82,19 @@ impl epi::App for TemplateApp {
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::CtxRef, frame: &mut epi::Frame<'_>) {
         let Self {
-            // label,
+            datetime,
+            number,
             selected,
-            // value,
         } = self;
+
+        let default_ndt = NaiveDate::from_ymd(1970, 1, 1).and_hms(0, 0, 0);
+        *datetime = match selected {
+            Epoch::Apfs => format!("{}", epochs::apfs(*number).unwrap_or(default_ndt)),
+            Epoch::Java => format!("{}", epochs::java(*number).unwrap_or(default_ndt)),
+            Epoch::Mozilla => format!("{}", epochs::mozilla(*number).unwrap_or(default_ndt)),
+            Epoch::Unix => format!("{}", epochs::unix(*number).unwrap_or(default_ndt)),
+            // _ => todo!(),
+        };
 
         // Examples of how to create different panels and windows.
         // Pick whichever suits you.
@@ -75,48 +112,35 @@ impl epi::App for TemplateApp {
             });
         });
 
-        // egui::SidePanel::left("side_panel").show(ctx, |ui| {
-        //     ui.heading("Side Panel");
-
-        //     ui.horizontal(|ui| {
-        //         ui.label("Write something: ");
-        //         ui.text_edit_singleline(label);
-        //     });
-
-        //     ui.add(egui::Slider::new(value, 0.0..=10.0).text("value"));
-        //     if ui.button("Increment").clicked() {
-        //         *value += 1.0;
-        //     }
-
-        //     ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
-        //         ui.horizontal(|ui| {
-        //             ui.spacing_mut().item_spacing.x = 0.0;
-        //             ui.label("powered by ");
-        //             ui.hyperlink_to("egui", "https://github.com/emilk/egui");
-        //             ui.label(" and ");
-        //             ui.hyperlink_to("eframe", "https://github.com/emilk/egui/tree/master/eframe");
-        //         });
-        //     });
-        // });
-
         egui::CentralPanel::default().show(ctx, |ui| {
-            // The central panel the region left after adding TopPanel's and SidePanel's
+            // The central panel is the region left after adding top and side panels.
 
             ui.heading("epochs egui");
             ui.hyperlink("https://github.com/oylenshpeegul/epochs-egui");
-            ui.add(egui::github_link_file!(
-                "https://github.com/emilk/eframe_template/blob/master/",
-                "Source code."
-            ));
             egui::warn_if_debug_build(ui);
 
-            egui::ComboBox::from_label("Select one!")
-                .selected_text(format!("{:?}", selected))
-                .show_ui(ui, |ui| {
-                    ui.selectable_value(selected, Enum::First, "First");
-                    ui.selectable_value(selected, Enum::Second, "Second");
-                    ui.selectable_value(selected, Enum::Third, "Third");
-                });
+            // ui.add(egui::Slider::new(number, std::i64::MIN..=std::i64::MAX).text("number"));
+            // ui.add(egui::DragValue::new(number).speed(1));
+            ui.horizontal(|ui| {
+                ui.label("Epoch value: ");
+                ui.add(egui::DragValue::new(number).speed(1));
+            });
+
+            ui.horizontal(|ui| {
+                ui.label("Epoch type: ");
+                egui::ComboBox::from_id_source("")
+                    .selected_text(format!("{}", selected))
+                    .show_ui(ui, |ui| {
+                        for e in Epoch::VALUES.iter().copied() {
+                            ui.selectable_value(selected, e, format!("{}", e));
+                        }
+                    });
+            });
+
+            ui.horizontal(|ui| {
+                ui.label("Datetime: ");
+                ui.text_edit_singleline(datetime);
+            });
         });
 
         if false {
@@ -128,12 +152,4 @@ impl epi::App for TemplateApp {
             });
         }
     }
-}
-
-#[derive(Debug, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Deserialize, serde::Serialize))]
-enum Enum {
-    First,
-    Second,
-    Third,
 }
